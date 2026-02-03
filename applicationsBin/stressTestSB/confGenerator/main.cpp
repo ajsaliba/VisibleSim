@@ -16,21 +16,23 @@ class Grid {
     inline void set(int ix, int iy, bool v=true) {
         assert(ix>=0 && ix<width && iy>=0 && iy<height);
         grid[ix+iy*width]=v;
+        return;
     }
     inline bool get(int ix, int iy) {
         assert(ix>=0 && ix<width && iy>=0 && iy<height);
         return grid[ix+iy*width];
     }
-public :
+public:
     Grid(int p_width,int p_height):width(p_width),height(p_height) {
         grid = new bool [width*height];
         // init to 0
         bool *ptr=grid;
         int n=width*height;
         while (n--) { *ptr++=false; }
+        return;
     };
     ~Grid() {
-        delete [] grid;
+        delete[] grid;
     }
 
     void add(int x,int y) {

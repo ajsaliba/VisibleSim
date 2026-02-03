@@ -1,8 +1,12 @@
-/*
- * simulator.cpp
+/**
+ * @file simulator.cpp
+ * @brief Implements BaseSimulator::Simulator.
  *
- *  Created on: 22 mars 2013
- *      Author: dom
+ * This file contains:
+ * - XML parsing helpers (string -> position/color/etc.)
+ * - Simulator construction/destruction
+ * - Configuration parsing (world, visuals, blocks, obstacles, targets)
+ * - Scheduler configuration and simulation startup
  */
 
 #include "simulator.h"
@@ -32,7 +36,9 @@ namespace BaseSimulator {
 
     bool Simulator::regrTesting = false; // No regression testing by default
 
-/********************************************************************************************/
+    // -----------------------------------------------------------------------------
+    // Parsing helpers
+    // -----------------------------------------------------------------------------
     Cell3DPosition Simulator::extractCell3DPositionFromString(string str) {
         auto pos1 = str.find_first_of('('),
                 pos2 = str.find_last_of(')');
@@ -117,14 +123,16 @@ namespace BaseSimulator {
         return stoi(str);
     }
 
-/********************************************************************************************/
+    // -----------------------------------------------------------------------------
+    // Simulator lifecycle
+    // -----------------------------------------------------------------------------
 
     Simulator::Simulator(int argc, char *argv[], BlockCodeBuilder _bcb) : bcb(_bcb), cmdLine(argc, argv, _bcb) {
 #ifdef DEBUG_OBJECT_LIFECYCLE
         OUTPUT << TermColor::LifecycleColor << "Simulator constructor" << TermColor::Reset << endl;
 #endif
 
-        // Ensure that only one instance of simulator is running at once
+        // Enforce singleton: the simulator is globally accessible via BaseSimulator::simulator.
         if (simulator == nullptr) {
             simulator = this;
             BaseSimulator::simulator = simulator;
@@ -134,16 +142,16 @@ namespace BaseSimulator {
             exit(EXIT_FAILURE);
         }
 
-        // Ensure that the configuration file exists and is well-formed
-
+        // Load configuration XML.
         string confFileName = cmdLine.getConfigFile();
 
         xmlDoc = new TiXmlDocument(confFileName.c_str());
         bool isLoaded = xmlDoc->LoadFile();
 
+        // Resolve simulation seed (deterministic if provided, otherwise randomized).
         random_device rd;
         mt19937 gen(rd());
-        uniform_int_distribution<> dis(1, INT_MAX); // [1,intmax]
+        uniform_int_distribution<> dis(1, INT_MAX); // [1, INT_MAX]
         if (cmdLine.isSimulationSeedSet()) {
             seed = cmdLine.getSimulationSeed();
         } else {
@@ -196,7 +204,7 @@ namespace BaseSimulator {
         }
 
         if (!GlutContext::GUIisEnabled) {
-            // If GUI disabled, and no mode specified, set fastest mode by default (Normally REALTIME)
+            // In terminal-only mode, default to fastest execution.
             scheduler->setSchedulerMode(SCHEDULER_MODE_FASTEST);
         }
 
@@ -235,7 +243,7 @@ namespace BaseSimulator {
                 exit(EXIT_FAILURE);
             }
 
-            // Configure the simulation world
+            // Configure ID assignment and core components.
             initializeIDPool();
 
             // Instantiate and configure the Scheduler
@@ -271,20 +279,13 @@ namespace BaseSimulator {
                 throw ParsingException(error.str());
             }
         }
-
-        int a,b;
-    switch (a) {
-        case 3 : b=2;
-            break;
-        default : b=6;
-    }
         return ORDERED;
     }
 
-// Seed for ID generation:
-// USES: idseed blocklist XML attribute if specified,
-//       OR otherwise, simulation seed if specified,
-//       OR otherwise, a random seed
+    // Seed for ID generation:
+    // - uses blockList "idseed" if specified
+    // - else uses simulation seed if specified
+    // - else requests a random seed
     int Simulator::parseRandomIdSeed() {
         TiXmlElement *element = xmlBlockListNode->ToElement();
         const char *attr = element->Attribute("idseed");
@@ -325,9 +326,7 @@ namespace BaseSimulator {
         }
     }
 
-//!< std::iota does not support a step for filling the container.
-//!< Hence, we use this template wrapper to overload the ++ operator
-//!< cf: http://stackoverflow.com/a/34545507/3582770
+    // std::iota increments by +1; for stepped sequences we provide a custom increment wrapper.
     template<class T>
     struct IotaWrapper {
         typedef T type;
@@ -525,7 +524,6 @@ namespace BaseSimulator {
             auto attr = windowElement->Attribute("size");
             if (attr) {
                 auto res = extract2DpointFromString(attr);
-                // TODO: tester full
                 GlutContext::initialScreenWidth = res.first;
                 GlutContext::initialScreenHeight = res.second;
                 GlutContext::screenWidth = GlutContext::initialScreenWidth;
@@ -603,7 +601,7 @@ namespace BaseSimulator {
     }
 
     TiXmlNode *Simulator::parseWorld(TiXmlNode *parent, int argc, char *argv[]) {
-        /* reading the xml file */
+        // Parse and instantiate the world.
         auto xmlWorldNode = parent->FirstChild("world");
         if (!xmlWorldNode) return nullptr;
         if (xmlWorldNode) {
@@ -650,8 +648,6 @@ namespace BaseSimulator {
                      << " please use the command line option [-s <maxTime>]" << endl;
             }
 
-//         // Get Blocksize
-//         float blockSize[3] = {0.0,0.0,0.0};
             xmlBlockListNode = xmlWorldNode->FirstChild("blockList");
             if (not xmlBlockListNode) {
                 stringstream error;
@@ -825,12 +821,6 @@ namespace BaseSimulator {
             const char *attr = element->Attribute("color");
             if (attr) {
                 defaultColor = extractColorFromString(attr);
-                /*string str(attr);
-                int pos1 = str.find_first_of(','),
-                    pos2 = str.find_last_of(',');
-                defaultColor.set(stoi(str.substr(0,pos1)),
-                                 stoi(str.substr(pos1+1,pos2-pos1-1)),
-                                 stoi(str.substr(pos2+1,str.length()-pos1-1)));*/
 #ifdef DEBUG_CONF_PARSING
                 OUTPUT << "new default color :" << defaultColor << endl;
 #endif
@@ -1136,8 +1126,6 @@ namespace BaseSimulator {
                     for (short iz = 0; iz <= world->lattice->getGridUpperBounds()[2]; iz++) {
                         const Cell3DPosition &glb = world->lattice->getGridLowerBounds(iz);
                         const Cell3DPosition &ulb = world->lattice->getGridUpperBounds(iz);
-                        /*cout << "glb" << glb << endl;
-                        cout << "ulb" << ulb << endl;*/
                         for (short iy = glb[1]; iy <= ulb[1]; iy++) {
                             for (short ix = glb[0]; ix <= ulb[0]; ix++) {
                                 position.set(ix, iy, iz);
@@ -1225,12 +1213,11 @@ namespace BaseSimulator {
     }
 
     void Simulator::startSimulation() {
-        // Connect all blocks – TODO: Check if needed to do it here (maybe all blocks are linked on addition)
+        // Connect all blocks once the full block list has been instantiated.
         world->linkBlocks();
 
         // Finalize scheduler configuration
         Scheduler *scheduler = getScheduler();
-        //scheduler->sem_schedulerStart->post();
         scheduler->setState(Scheduler::NOTSTARTED);
 
 
@@ -1245,7 +1232,7 @@ namespace BaseSimulator {
         //start simulation if autoStart is enabled
         if (scheduler->willAutoStart())
             scheduler->start(scheduler->getSchedulerMode());
-        // Enter graphical main loop
+        // Enter the main loop (GLUT in GUI mode; terminal mode still uses GlutContext::mainLoop()).
         GlutContext::mainLoop();
     }
 

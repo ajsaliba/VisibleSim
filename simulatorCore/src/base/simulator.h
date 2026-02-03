@@ -1,9 +1,13 @@
-/*! @file simulator.h
- *  @brief Header file for the Abstract class Simulator
+/**
+ * @file simulator.h
+ * @brief Declares BaseSimulator::Simulator.
  *
- *
- *  Created on: 22 mars 2013
- *      Author: dom
+ * The Simulator is the entry point for a VisibleSim run. It:
+ * - Parses command-line arguments and the XML configuration file.
+ * - Instantiates the simulation World (model-specific).
+ * - Instantiates and configures the event Scheduler.
+ * - Instantiates all modules (blocks) and optional objects (targets, obstacles, visuals).
+ * - Starts the main loop (GUI or terminal mode).
  */
 
 #ifndef SIMULATOR_H_
@@ -28,112 +32,131 @@ namespace BaseSimulator {
 
     extern Simulator *simulator;
 
-/*! @class Simulator
- *  @brief Simulator is responsible for creating and configuring the core components of simulation (i.e. World, Scheduler), by parsing the configuration file and interpreting the command line args
- *
- */
+    /**
+     * @class Simulator
+     * @brief Orchestrates configuration parsing and bootstraps a simulation run.
+     *
+     * Lifecycle (typical):
+     * - Construct Simulator(argc, argv, blockCodeBuilder)
+     * - parseConfiguration(argc, argv)  (loads world, scheduler, blocks, obstacles, targets, customizations)
+     * - startSimulation()               (links blocks, starts scheduler, enters main loop)
+     * - deleteSimulator()               (destroys world/scheduler/config document)
+     *
+     * Ownership:
+     * - Owns the configuration XML document (xmlDoc).
+     * - Owns the instantiated World and Scheduler.
+     * - Maintains a global singleton pointer (BaseSimulator::simulator) for convenience.
+     */
     class Simulator {
     public:
         enum IDScheme {
             ORDERED = 0, MANUAL, RANDOM
         };
 
-        static bool regrTesting;            //!< Indicates if this simulation instance is performing regression testing
+        //! True when running in regression-testing mode.
+        static bool regrTesting;
+
+        //! When enabled, exports the final configuration before termination.
         inline static bool exportFinalConfiguration;
+
+        //! Name/path of the configuration file currently loaded.
         inline static string configFileName;
-        //!< (causes configuration export before simulator termination)
 
         static Simulator *getSimulator() {
             assert(simulator != NULL);
             return (simulator);
         }
 
-        /*!
-         *  @brief Statically deletes this instance of the simulator
-         */
+        /** @brief Deletes the singleton simulator instance (if any). */
         static void deleteSimulator();
 
         inline CommandLine &getCmdLine() { return cmdLine; }
 
-        virtual void printInfo() { cout << "I'm a Simulator" << endl; }
+        /** @brief Debug helper. Subclasses may override. */
+        virtual void printInfo() { cout << "Simulator" << endl; }
 
-        /*!
-         *  @brief Successively calls all configuration file parsing functions to configure the simulation
+        /**
+         * @brief Parses the XML configuration and configures the simulation.
          *
-         *  @param argc The number of command line arguments
-         *  @param argv The command line arguments
+         * This creates/configures the World and Scheduler, then instantiates all blocks and
+         * optional elements (obstacles, targets, customizations).
          */
         void parseConfiguration(int argc, char *argv[]);
 
-        /*!
-         *  @brief Starts the simulation
-         *   (i.e. link the blocks, start the scheduler if needed, and enter the GLUT main loop)
+        /**
+         * @brief Starts the simulation loop.
          *
+         * Links blocks, starts the scheduler if auto-start is enabled, and enters the
+         * main loop (GLUT when GUI is enabled).
          */
         void startSimulation();
 
-        /*!
-         *  @brief Generates a random unsigned int (ruint)
-         */
+        /** @brief Returns a random unsigned integer for simulation use. */
         ruint getRandomUint();
 
-        /*
-         * @brief Getter for the simulation seed
-         * @return The global simulation seed
-         * @warning do not use cmdLine->getSimulationSeed() instead of this one
+        /**
+         * @brief Returns the effective simulation seed.
+         *
+         * Note: this is the authoritative seed for the run. Command-line may not specify it.
          */
         inline int getSimulationSeed() { return seed; }
 
     protected:
-        int seed; //!< Simulation seed, used for every randomized operation
-        uintRNG generator; //!< Simulation random generator, used for every randomized operation, except for the id distribution
+        //! Simulation seed used for randomized operations.
+        int seed;
 
-        static Simulator *simulator; //!< Static member for accessing *this* simulator
-        Scheduler *scheduler;        //!< Scheduler to be instantiated and configured
-        World *world;                //!< Simulation world to be instantiated and configured
+        //! Random generator used for simulation randomness (not for ID distribution).
+        uintRNG generator;
 
-        TiXmlDocument *xmlDoc;        //!< TinyXMLDocument for the configuration file
-        //TiXmlNode* xmlWorldNode; //!< world XML node from the configuration file
-        TiXmlNode *xmlBlockListNode; //!< blockList XML node from the configuration file
+        //! Singleton instance pointer.
+        static Simulator *simulator;
 
-        BlockCodeBuilder bcb; //!< Function pointer to the target BlockCode builder
+        //! Scheduler instance used to execute events.
+        Scheduler *scheduler;
 
-        CommandLine cmdLine;        //!< Utility member for accessing command line arguments
-        int schedulerMaxDate = 0;        //!< Maximum simulation date
-        vector<bID> IDPool; //!< Vector whose size is the number of blocks in the configuration and that contains blockIds to be assigned to the block, in their order of appearance in the configuration file (by default: {1,2,3,...,n})
-        IDScheme ids = ORDERED; //!< Determines what module ID distribution scheme the simulator is using. ORDERED by default
+        //! Simulation world (model-specific).
+        World *world;
 
-        /*!
-         *  @brief Parses the configuration file for main information common to the simulator blocks.
+        //! TinyXML document representing the configuration file.
+        TiXmlDocument *xmlDoc;
+
+        //! Cached pointer to the <blockList> node, used during parsing.
+        TiXmlNode *xmlBlockListNode;
+
+        //! Factory for per-module program (BlockCode) instances.
+        BlockCodeBuilder bcb;
+
+        //! Parsed command-line arguments.
+        CommandLine cmdLine;
+
+        //! Maximum simulation date (if bounded). This may also be set by deprecated XML attributes.
+        int schedulerMaxDate = 0;
+
+        /**
+         * Pool of IDs to assign to blocks.
          *
-         *  Calls the loadWorld virtual function to instantiate the right subclass of World with the parsed data.
-         *
-         *  @param argc The number of command line arguments
-         *  @param argv The command line arguments
-         * @return return a pointer to the world entry
+         * - ORDERED: IDs are assigned sequentially as blocks are encountered.
+         * - MANUAL: IDs are read from each <block id="...">.
+         * - RANDOM: IDs are generated and shuffled.
+         */
+        vector<bID> IDPool;
+
+        //! ID distribution scheme currently in use.
+        IDScheme ids = ORDERED;
+
+        /**
+         * @brief Parses a <vs> root node (if present) and then the <world> node.
+         * @return Pointer to the parsed <world> node, or nullptr on failure.
          */
         TiXmlNode *parseVS(TiXmlNode *parent, int argc, char *argv[]);
 
-/*!
-     *  @brief Parses the configuration file for World information common to all blocks.
-     *
-     *  Calls the loadWorld virtual function to instantiate the right subclass of World with the parsed data.
-     *
-     *  @param argc The number of command line arguments
-     *  @param argv The command line arguments
-     *  @return return a pointer to the world entry
+    /**
+     * @brief Parses the <world> node and instantiates the model-specific World.
+     * @return Pointer to the parsed <world> node, or nullptr if missing.
      */
         TiXmlNode *parseWorld(TiXmlNode *parent, int argc, char *argv[]);
 
-/*!
-     *  @brief Parses the configuration file for World information common to all blocks.
-     *
-     *  Calls the loadWorld virtual function to instantiate the right subclass of World with the parsed data.
-     *
-     *  @param argc The number of command line arguments
-     *  @param argv The command line arguments
-     *
-     */
+    /** @brief Parses optional <visuals> settings (window, background, render toggles). */
         bool parseVisuals(TiXmlNode *parent);
 
         /*!
@@ -219,7 +242,7 @@ namespace BaseSimulator {
           */
         void parseObstacles(TiXmlNode *parent);
 
-        //<! @brief Parses the configuration for target information, and instantiate them
+        /** @brief Parses optional targets (<targetList>) and initializes BlockCode::target. */
         void parseTarget(TiXmlNode *parent);
 
         /*! @fn virtual void loadWorld(int lx, int ly, int lz, int argc, char *argv[])
@@ -244,6 +267,11 @@ namespace BaseSimulator {
         virtual void loadBlock(TiXmlElement *blockElt, bID blockId, BlockCodeBuilder bcb,
                                const Cell3DPosition &pos, const Color &color, uint8_t orient) = 0;
 
+        /**
+         * @brief Constructs a Simulator and loads the configuration XML document.
+         *
+         * The World and blocks are not created until parseConfiguration().
+         */
         Simulator(int argc, char *argv[], BlockCodeBuilder bcb);
 
         virtual ~Simulator();
