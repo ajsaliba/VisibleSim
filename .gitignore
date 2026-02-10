@@ -65,9 +65,6 @@ utilities/meld-compiler/dists/quicklisp/software/
 doc/xml/
 doc/html/
 
-# Configuration files (must be added manually)
-applicationsBin/*/*.xml
-
 # Screenshot and video exports
 applicationsBin/*/*.ppm
 applicationsBin/*/*.png
