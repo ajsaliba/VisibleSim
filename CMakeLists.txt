@@ -675,6 +675,14 @@ add_executable(catoms3DRotate
 target_link_libraries(catoms3DRotate Catoms3D -lfreeglut -lmuparser -lOpenGL32 -lglu32 -lglew32) #
 install(TARGETS catoms3DRotate RUNTIME DESTINATION applicationsBin/catoms3DRotate)
 
+add_executable(
+        flowBridgeCatoms3D
+        applicationsSrc/flowBridgeCatoms3D/flowBridgeCatoms3D.cpp
+        applicationsSrc/flowBridgeCatoms3D/flowBridgeCatoms3DCode.cpp
+)
+target_link_libraries(flowBridgeCatoms3D Catoms3D -lfreeglut -lmuparser -lOpenGL32 -lglu32 -lglew32) #
+install(TARGETS flowBridgeCatoms3D RUNTIME DESTINATION applicationsBin/flowBridgeCatoms3D)
+
 add_executable(testCase
                 applicationsSrc/testCase/testCase.cpp 
                 applicationsSrc/testCase/testCaseCode.cpp
