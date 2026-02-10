@@ -738,6 +738,14 @@ add_executable(myAppMotionSC
 target_link_libraries(myAppMotionSC SlidingCubes -lfreeglut -lmuparser -lOpenGL32 -lglu32 -lglew32)
 install(TARGETS myAppMotionSC RUNTIME DESTINATION applicationsBin/myAppMotionSC)
 
+add_executable(
+        flowBridgeSC
+        applicationsSrc/flowBridgeSC/flowBridgeSC.cpp
+        applicationsSrc/flowBridgeSC/flowBridgeSCCode.cpp
+)
+target_link_libraries(flowBridgeSC SlidingCubes -lfreeglut -lmuparser -lOpenGL32 -lglu32 -lglew32)
+install(TARGETS flowBridgeSC RUNTIME DESTINATION applicationsBin/flowBridgeSC)
+
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/applicationsSrc/myStabilityApp/myStabilityApp.cpp")
         add_executable(myStabilityApp applicationsSrc/myStabilityApp/myStabilityApp.cpp applicationsSrc/myStabilityApp/myStabilityAppCode.cpp applicationsSrc/myStabilityApp/vector2d.cpp  applicationsSrc/myStabilityApp/mypolygon.cpp)
                 target_link_libraries(myStabilityApp BlinkyBlocks -lfreeglut -lmuparser -lOpenGL32 -lglu32 -lglew32)
