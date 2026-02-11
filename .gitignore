@@ -79,6 +79,9 @@ applicationsBin/*/*.pdf
 applicationsBin/*/animation_*/
 applicationsBin/*/Screenshots/
 
+# Build output directory
+build-mingw64/
+
 # User-generated files
 applicationsBin/*/*.m
 TAGS
