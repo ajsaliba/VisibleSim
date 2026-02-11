@@ -2,12 +2,10 @@
  * @file   flowBridgeSCCode.cpp
  * @brief  Connectivity-preserving single-module motion for Sliding Cubes.
  *
- * ═══════════════════════════════════════════════════════════════════
  *  Sliding Cube Model Interpretation
- * ═══════════════════════════════════════════════════════════════════
  *
  *  Communication model
- *  ───────────────────
+ * 
  *  Each Sliding Cube module sits on a simple-cubic (SC) lattice cell
  *  and has 6 connectors — one per axis-aligned face (±X, ±Y, ±Z).
  *  Communication is strictly local: a module can only exchange
@@ -15,7 +13,7 @@
  *  through P2PNetworkInterface objects.
  *
  *  Motion model
- *  ────────────
+ * 
  *  Two types of motion exist:
  *
  *  1. Translation (slide along a face)
@@ -41,7 +39,7 @@
  *  SlidingCubesBlock::moveTo(dest) and getAllMotions().
  *
  *  Connectivity preservation
- *  ─────────────────────────
+ * 
  *  Before every step we verify that *removing the mobile module
  *  from its current cell* does NOT disconnect the remaining modules.
  *  This is done via BFS on the SC lattice grid, skipping the
@@ -49,9 +47,7 @@
  *  destination has at least one occupied SC neighbor (besides the
  *  mobile itself) so that the mobile re-joins the structure.
  *
- * ═══════════════════════════════════════════════════════════════════
  *  Algorithm overview
- * ═══════════════════════════════════════════════════════════════════
  *
  *  1. On startup every module logs itself.  Exactly one module is
  *     elected as the *mobile* — the first non-articulation-point
@@ -82,26 +78,20 @@
 
 using namespace std;
 
-// ═══════════════════════════════════════════════════════════════════
 //  Static members
-// ═══════════════════════════════════════════════════════════════════
 
 bool           FlowBridgeSCCode::mobileChosen = false;
 bID            FlowBridgeSCCode::mobileId      = 0;
 Cell3DPosition FlowBridgeSCCode::targetPos;
 
-// ═══════════════════════════════════════════════════════════════════
 //  Construction
-// ═══════════════════════════════════════════════════════════════════
 
 FlowBridgeSCCode::FlowBridgeSCCode(SlidingCubesBlock *host)
     : SlidingCubesBlockCode(host), module(host)
 {
 }
 
-// ═══════════════════════════════════════════════════════════════════
 //  Connectivity check — BFS excluding one position
-// ═══════════════════════════════════════════════════════════════════
 
 /**
  * Performs a BFS over occupied SC lattice cells, purposely *skipping*
@@ -154,9 +144,7 @@ bool FlowBridgeSCCode::isConnectedWithout(const Cell3DPosition &pos) const
     return visited.size() == occupied.size();
 }
 
-// ═══════════════════════════════════════════════════════════════════
 //  Motion planner — greedy single step
-// ═══════════════════════════════════════════════════════════════════
 
 /**
  * Enumerate valid motions for this module, keep only those that
@@ -274,9 +262,7 @@ bool FlowBridgeSCCode::planNextStep()
     return true;
 }
 
-// ═══════════════════════════════════════════════════════════════════
 //  Lifecycle: startup
-// ═══════════════════════════════════════════════════════════════════
 
 /**
  * Called once per module when the simulation starts.
@@ -390,9 +376,7 @@ void FlowBridgeSCCode::startup()
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════
 //  Lifecycle: onMotionEnd — chain next step
-// ═══════════════════════════════════════════════════════════════════
 
 void FlowBridgeSCCode::onMotionEnd()
 {

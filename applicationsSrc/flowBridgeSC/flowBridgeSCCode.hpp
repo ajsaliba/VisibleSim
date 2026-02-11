@@ -30,12 +30,12 @@ class FlowBridgeSCCode : public SlidingCubesBlockCode {
 private:
     SlidingCubesBlock *module = nullptr;   ///< Pointer to the host module
 
-    // ── Mobile-module state (shared across all instances) ──
+    // Mobile-module state (shared across all instances)
     static bool             mobileChosen;    ///< True once the mobile is elected
     static bID              mobileId;        ///< Block-id of the mobile module
     static Cell3DPosition   targetPos;       ///< Goal cell (near end of bridge)
 
-    // ── Connectivity helper ──
+    // Connectivity helper
 
     /**
      * @brief Check whether removing @p pos from the occupied set keeps
@@ -49,7 +49,7 @@ private:
      */
     bool isConnectedWithout(const Cell3DPosition &pos) const;
 
-    // ── Motion planning helper ──
+    // Motion planning helper
 
     /**
      * @brief Choose the next valid step toward targetPos.
@@ -66,7 +66,7 @@ public:
     FlowBridgeSCCode(SlidingCubesBlock *host);
     ~FlowBridgeSCCode() override = default;
 
-    // ── BlockCode lifecycle ──
+    // BlockCode lifecycle
     void startup() override;
 
     /**
@@ -76,7 +76,7 @@ public:
      */
     void onMotionEnd() override;
 
-    // ── Factory ──
+    // Factory
     static BlockCode *buildNewBlockCode(BuildingBlock *host) {
         return new FlowBridgeSCCode(static_cast<SlidingCubesBlock *>(host));
     }
