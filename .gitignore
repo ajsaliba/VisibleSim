@@ -86,3 +86,6 @@ TAGS
 # CMake files
 applicationsSrc/*/cmake-build-debug/
 applicationsSrc/*/.idea/
+
+# Build output directory
+build-mingw64/
