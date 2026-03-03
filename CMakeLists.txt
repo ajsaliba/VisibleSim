@@ -675,13 +675,6 @@ add_executable(catoms3DRotate
 target_link_libraries(catoms3DRotate Catoms3D -lfreeglut -lmuparser -lOpenGL32 -lglu32 -lglew32) #
 install(TARGETS catoms3DRotate RUNTIME DESTINATION applicationsBin/catoms3DRotate)
 
-add_executable(testCase
-                applicationsSrc/testCase/testCase.cpp 
-                applicationsSrc/testCase/testCaseCode.cpp
-)
-target_link_libraries(testCase SlidingCubes -lfreeglut -lmuparser -lOpenGL32 -lglu32 -lglew32) #
-install(TARGETS testCase RUNTIME DESTINATION applicationsBin/testCase)
-
 add_executable(catomsCombination 
                 applicationsSrc/catomsCombination/catomsCombination.cpp 
                 applicationsSrc/catomsCombination/catomsCombinationCode.cpp
