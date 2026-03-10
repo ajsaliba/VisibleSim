@@ -1,0 +1,57 @@
+<?xml version="1.0" standalone="no" ?>
+<!-- Config 3: "L-pipe Bottleneck" — forces bridge placement
+     Shape: An L-shaped pipe with supply on the left arm and demand extending
+     from the right arm. The L-corner is only 1 cell wide, creating a severe
+     bottleneck (max-flow = 1) that forces the algorithm to place bridge
+     modules to widen the passage.
+
+     Layout (z=0):
+                x: 0  1  2  3  4  5  6
+        y=2:    S  S  C  C  C  C  .       supply arm + horizontal bar
+        y=3:    S  .  .  .  .  C  .       corner: only (5,3) connects
+        y=4:    .  .  .  .  .  C  .       vertical arm
+        y=5:    .  .  .  .  .  .  .
+
+     Supply (red, not in target): (0,2), (1,2), (0,3) — 3 modules
+     Core (green, in target):     (2,2),(3,2),(4,2),(5,2),(5,3),(5,4) — 6 modules
+     Demand (empty target):       (6,2),(6,3),(6,4) — 3 positions
+
+     Total: 9 modules = 9 target positions.
+     The L-corner bottleneck limits max-flow to 1, but we need 3.
+     The algorithm must deploy bridges (e.g. at (4,3)) to create
+     alternative paths through the narrow passage. -->
+
+<world gridSize="10,10,3" windowSize="1280,720">
+    <camera target="25,25,5" directionSpherical="-30,40,80" angle="45.0" near="1.0" far="600.0"/>
+
+    <blockList color="128,128,128" blockSize="10,10,10">
+        <!-- Horizontal bar (core, in target) -->
+        <block position="2,2,0" orientation="0" color="0,200,0"/>
+        <block position="3,2,0" orientation="0" color="0,200,0"/>
+        <block position="4,2,0" orientation="0" color="0,200,0"/>
+        <block position="5,2,0" orientation="0" color="0,200,0"/>
+
+        <!-- L-corner and vertical arm (core, in target) -->
+        <block position="5,3,0" orientation="0" color="0,200,0"/>
+        <block position="5,4,0" orientation="0" color="0,200,0"/>
+
+        <!-- Supply arm (not in target, red) -->
+        <block position="3,3,0" orientation="0" color="200,0,0"/>
+        <block position="1,2,0" orientation="0" color="200,0,0"/>
+        <block position="4,3,0" orientation="0" color="200,0,0"/>
+    </blockList>
+
+    <!-- Target: L-shape core + 3 demand positions extending right -->
+    <targetList>
+        <target format="grid">
+            <!-- Core positions (already filled) -->
+            <cell position="2,2,0"/>  <cell position="3,2,0"/>
+            <cell position="4,2,0"/>  <cell position="5,2,0"/>
+            <cell position="5,3,0"/>  <cell position="5,4,0"/>
+            <!-- Demand positions (empty, to be filled by supply) -->
+            <cell position="6,2,0"/>
+            <cell position="6,3,0"/>
+            <cell position="6,4,0"/>
+        </target>
+    </targetList>
+</world>
