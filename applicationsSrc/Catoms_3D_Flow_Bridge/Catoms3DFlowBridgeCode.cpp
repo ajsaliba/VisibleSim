@@ -514,15 +514,13 @@ public:
     /* Print which structural blocks are / are not used as a pivot for any
      motion within the augmenting paths (i.e. actual flow).
      Idle blocks are candidates that can be moved to build bridges. */
-    void printIdleStructuralBlocks() {
+    void printIdleStructuralBlocks(vector<Cell3DPosition> &idleStructuralModules) {
 
         set<Cell3DPosition> usedPivots = findPivotsInAugmentingPaths();
         const auto& structural = Catoms3DFlowBridgeCode::getStructuralBlocks();
 
         cout << "\n";
         cout << "\n--- Idle Structural Blocks (not pivot in any augmenting path) ---\n";
-
-        vector<Cell3DPosition> idle;
 
         for (const auto& pos : structural) {
 
@@ -533,19 +531,19 @@ public:
             } else {
 
                 cout << "  [IDLE]               " << pos.to_string() << "\n";
-                idle.push_back(pos);
+                idleStructuralModules.push_back(pos);
 
             }
 
         }
 
-        if (idle.empty()) {
+        if (idleStructuralModules.empty()) {
 
             cout << "All structural blocks serve as pivots in augmenting paths.\n";
 
         } else {
 
-            cout << idle.size() << " idle structural block(s) available for bridge building.\n";
+            cout << idleStructuralModules.size() << " idle structural block(s) available for bridge building.\n";
 
         }
 
@@ -556,13 +554,12 @@ public:
     // For each min-cut edge (u,v), build a fresh flow graph with
     // SUPER_SOURCE -> u and v -> SUPER_SINK, run Edmonds-Karp, and print the
     // bridge paths (intermediate positions between u and v).
-    void findBridgePaths(const vector<pair<Cell3DPosition, Cell3DPosition>>& minCutEdges) {
+    void findBridgePaths(const vector<pair<Cell3DPosition, Cell3DPosition>>& minCutEdges, pair<pair<Cell3DPosition, Cell3DPosition>, vector<vector<Cell3DPosition>>>& bridgeCache) {
 
         cout << "\n";
         cout << "\n--- Bridge Paths for Min-Cut Edges ---\n";
 
         for (size_t idx = 0; idx < minCutEdges.size(); ++idx) {
-
             const Cell3DPosition& uPos = minCutEdges[idx].first;
             const Cell3DPosition& vPos = minCutEdges[idx].second;
 
@@ -581,9 +578,11 @@ public:
             auto addEdgesRec = [&](Node* fromNode, const Cell3DPosition& fromPos, auto&& self) -> void {
 
                 string k = fromNode->key();
-                if (nodeVisited.count(k)) return;
-                nodeVisited.insert(k);
 
+                if (nodeVisited.count(k)) return;
+
+                nodeVisited.insert(k);
+                
                 vector<Cell3DPosition> reachable;
                 Catoms3DFlowBridgeCode::getAllPossibleMotionsFromPosition(fromPos, reachable);
 
@@ -620,6 +619,10 @@ public:
             int flow = bridgeGraph->findAndPrintAugmentingPaths(
                 bridgeGraph->superSource, bridgeGraph->superSink);
 
+            // Fill bridgeCache for the last processed min-cut edge
+            bridgeCache.first = make_pair(uPos, vPos);
+            bridgeCache.second.clear();
+
             if (flow == 0) {
 
                 cout << "  No bridge path found for this min-cut edge.\n";
@@ -632,9 +635,11 @@ public:
                 for (size_t p = 0; p < bridgeGraph->augmentingPathPositions.size(); ++p) {
 
                     const auto& path = bridgeGraph->augmentingPathPositions[p];
+
                     cout << "  Bridge " << (p + 1) << " intermediate positions:";
 
                     bool hasBridge = false;
+                    std::vector<Cell3DPosition> bridgePath;
 
                     for (const auto& pos : path) {
 
@@ -642,6 +647,7 @@ public:
 
                             cout << " " << pos.to_string();
                             hasBridge = true;
+                            bridgePath.push_back(pos);
 
                         }
 
@@ -650,6 +656,8 @@ public:
                     if (!hasBridge) cout << " (direct edge, no intermediates)";
 
                     cout << "\n";
+
+                    bridgeCache.second.push_back(bridgePath);
 
                 }
 
@@ -663,13 +671,31 @@ public:
 
     }
 
+    /* Checks whether the bridge cache is valid
+    void checkBridgeCache(pair<pair<Cell3DPosition, Cell3DPosition>, vector<vector<Cell3DPosition>>>& bridgeCache) {
+
+        cout << "\n\n\n\n\n\n\n\n\n\n\n\n";
+
+        const Cell3DPosition& uPos = bridgeCache.first.first;
+        const Cell3DPosition& vPos = bridgeCache.first.second;
+        const vector<vector<Cell3DPosition>>& cachedBridges = bridgeCache.second;
+
+        cout << "\n=== Cached bridge paths for " << uPos.to_string() << " -> " << vPos.to_string() << " has: " << cachedBridges.size() << " paths ===\n";
+
+        cout << "\n\n\n\n\n\n\n\n\n\n\n\n";
+
+    }
+    */
+
     // Edmonds-Karp: Find and print all augmenting paths from source to sink
     void startProcess(Node* source, Node* sink) {
 
         auto originalCap = backupCapacities();
         int pathNum = findAndPrintAugmentingPaths(source, sink);
         auto minCutEdges = printMinCutEdges(originalCap, source, sink);
-        findBridgePaths(minCutEdges);
+        findBridgePaths(minCutEdges, Catoms3DFlowBridgeCode::bridgeCache);
+        // checkBridgeCache(Catoms3DFlowBridgeCode::bridgeCache);
+        // restoreCapacities(originalCap);
 
     }
 
@@ -679,6 +705,8 @@ public:
 vector<Cell3DPosition> Catoms3DFlowBridgeCode::targetPositions;
 vector<Cell3DPosition> Catoms3DFlowBridgeCode::movingBlocks;
 vector<Cell3DPosition> Catoms3DFlowBridgeCode::structuralBlocks;
+vector<Cell3DPosition> Catoms3DFlowBridgeCode::idleStructuralBlocks;
+pair<pair<Cell3DPosition, Cell3DPosition>, vector<vector<Cell3DPosition>>> Catoms3DFlowBridgeCode::bridgeCache;
 
 Catoms3DFlowBridgeCode::Catoms3DFlowBridgeCode(Catoms3DBlock *host)
     : Catoms3DBlockCode(host), catom(host) {}
@@ -707,7 +735,7 @@ void Catoms3DFlowBridgeCode::startup() {
     flowGraph->printNodes();
     flowGraph->printEdges();
     flowGraph->startProcess(flowGraph->superSource, flowGraph->superSink);
-    flowGraph->printIdleStructuralBlocks();
+    flowGraph->printIdleStructuralBlocks(idleStructuralBlocks);
 
     delete flowGraph;
 
@@ -733,6 +761,12 @@ const vector<Cell3DPosition>& Catoms3DFlowBridgeCode::getStructuralBlocks() {
 
 }
 
+const vector<Cell3DPosition>& Catoms3DFlowBridgeCode::getIdleStructuralBlocks() {
+
+    return idleStructuralBlocks;
+
+}
+
 void Catoms3DFlowBridgeCode::setTargetPositions(const vector<Cell3DPosition>& positions) {
 
     targetPositions = positions;
@@ -748,6 +782,12 @@ void Catoms3DFlowBridgeCode::setMovingBlocks(const vector<Cell3DPosition>& posit
 void Catoms3DFlowBridgeCode::setStructuralBlocks(const vector<Cell3DPosition>& positions) {
 
     structuralBlocks = positions;
+
+}
+
+void Catoms3DFlowBridgeCode::setIdleStructuralBlocks(const vector<Cell3DPosition>& positions) {
+
+    idleStructuralBlocks = positions;
 
 }
 

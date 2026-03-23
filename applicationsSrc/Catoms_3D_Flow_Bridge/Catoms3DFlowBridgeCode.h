@@ -17,7 +17,10 @@ private:
     static vector<Cell3DPosition> targetPositions;
     static vector<Cell3DPosition> movingBlocks;
     static vector<Cell3DPosition> structuralBlocks;
+    static vector<Cell3DPosition> idleStructuralBlocks;
 public:
+// Cache for bridge paths between pairs of positions, to avoid redundant computations across multiple runs of the flow algorithm
+    static pair<pair<Cell3DPosition, Cell3DPosition>, vector<vector<Cell3DPosition>>> bridgeCache;
     // Constructor and destructor
     Catoms3DFlowBridgeCode(Catoms3DBlock *host);
     ~Catoms3DFlowBridgeCode() {};
@@ -34,9 +37,11 @@ public:
     static const vector<Cell3DPosition>& getTargetPositions();
     static const vector<Cell3DPosition>& getMovingBlocks();
     static const vector<Cell3DPosition>& getStructuralBlocks();
+    static const vector<Cell3DPosition>& getIdleStructuralBlocks();
     static void setTargetPositions(const vector<Cell3DPosition>& positions);
     static void setMovingBlocks(const vector<Cell3DPosition>& positions);
     static void setStructuralBlocks(const vector<Cell3DPosition>& positions);
+    static void setIdleStructuralBlocks(const vector<Cell3DPosition>& positions);
 
     // Override of startup function to parse configuration and extract moving blocks and target positions
     void startup() override;
