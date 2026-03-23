@@ -1,4 +1,5 @@
 #include "Catoms3DFlowBridgeCode.h"
+#include "robots/catoms3D/catoms3DMotionEngine.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -51,10 +52,9 @@ public:
     static constexpr int INF_CAPACITY = 1000000000;
     Node *superSource = nullptr;
     Node *superSink = nullptr;
-    vector<set<Cell3DPosition>> minCutEdgeCandidatesIntersection, 
-                                minCutEdgeCandidatesNearU, 
-                                minCutEdgeCandidatesNearV;
-                                // Store candidate bridge positions for each min-cut edge
+    // Each augmenting path stored as the ordered sequence of grid positions
+    // (SUPER_SOURCE and SUPER_SINK are excluded).
+    vector<vector<Cell3DPosition>> augmentingPathPositions;
 
     ~FlowGraph() {
 
@@ -295,6 +295,29 @@ public:
             printAugmentingPath(source, path, ++pathNum);
             updateResiduals(path);
 
+            // Store the grid positions of this augmenting path
+            // (skip SUPER_SOURCE and SUPER_SINK)
+            vector<Cell3DPosition> pathPositions;
+
+            for (Edge* e : path) {
+
+                if (e->from->specialKey.empty()) {
+
+                    pathPositions.push_back(Cell3DPosition(e->from->x, e->from->y, e->from->z));
+
+                }
+
+            }
+
+            // Add the last node if it's a grid node
+            if (!path.empty() && path.back()->to->specialKey.empty()) {
+
+                pathPositions.push_back(Cell3DPosition(path.back()->to->x, path.back()->to->y, path.back()->to->z));
+
+            }
+            
+            augmentingPathPositions.push_back(pathPositions);
+
         }
 
         if (pathNum == 0) {
@@ -367,6 +390,7 @@ public:
 
     void printNodes() {
 
+        cout << "\n";
         cout << "\n--- Flow Graph Nodes ---\n";
 
         for (const auto& kv : nodes) {
@@ -379,10 +403,13 @@ public:
 
         }
 
+        cout << "\n";
+
     }
 
     void printEdges() {
 
+        cout << "\n";
         cout << "\n--- Flow Graph Edges (including reverse) ---\n";
         set<pair<string, string>> printed;
 
@@ -409,12 +436,16 @@ public:
 
         }
 
+        cout << "\n";
+
     }
 
-    // Helper: Print min-cut edges and candidates
-    void printMinCutEdges(const unordered_map<Edge*, int>& originalCap, Node* source, Node* sink) {
-        
+    // Helper: Print min-cut edges and return them as position pairs
+    vector<pair<Cell3DPosition, Cell3DPosition>> printMinCutEdges(const unordered_map<Edge*, int>& originalCap, Node* source, Node* sink) {
+
+        vector<pair<Cell3DPosition, Cell3DPosition>> minCutEdges;
         set<Node*> reachable = findReachable(source);
+        cout << "\n";
         cout << "\n--- Min-Cut Edges (from reachable to non-reachable) ---\n";
         set<pair<string, string>> minCutPrinted;
 
@@ -433,94 +464,16 @@ public:
                     pair<string, string> edgeKey = make_pair(from, to);
 
                     if (!minCutPrinted.count(edgeKey)) {
-                        
+
                         cout << "Min-cut edge: " << from << " -> " << to << "\n";
                         minCutPrinted.insert(edgeKey);
-                        // For each min-cut edge, only consider empty cells adjacent to BOTH ends
-                        bool uIsGrid = u->specialKey.empty();
-                        bool vIsGrid = e->to->specialKey.empty();
 
-                        if (uIsGrid && vIsGrid) {
+                        // Collect grid-position pairs (skip special nodes)
+                        if (u->specialKey.empty() && e->to->specialKey.empty()) {
 
-                            auto* lattice = BaseSimulator::getWorld()->lattice;
-                            set<Cell3DPosition> emptyU, emptyV, intersection;
-                            vector<Cell3DPosition> nU = lattice->getFreeNeighborCells(Cell3DPosition(u->x, u->y, u->z));
-                            vector<Cell3DPosition> nV = lattice->getFreeNeighborCells(Cell3DPosition(e->to->x, e->to->y, e->to->z));
-                            emptyU.insert(nU.begin(), nU.end());
-                            emptyV.insert(nV.begin(), nV.end());
-                            emptyU.insert(Cell3DPosition(u->x, u->y, u->z));
-                            emptyV.insert(Cell3DPosition(e->to->x, e->to->y, e->to->z));
-
-                            for (const auto& pos : emptyU) {
-                                
-                                if (emptyV.count(pos)) intersection.insert(pos);
-
-                            }
-
-                            const auto& targetPositions = Catoms3DFlowBridgeCode::getTargetPositions();
-                            const auto& movingBlocks = Catoms3DFlowBridgeCode::getMovingBlocks();
-                            set<Cell3DPosition> excludeSet(targetPositions.begin(), targetPositions.end());
-                            excludeSet.insert(movingBlocks.begin(), movingBlocks.end());
-
-                            for (auto it = emptyU.begin(); it != emptyU.end(); ) {
-
-                                if (excludeSet.count(*it)) it = emptyU.erase(it);
-                                else ++it;
-
-                            }
-
-                            for (auto it = emptyV.begin(); it != emptyV.end(); ) {
-
-                                if (excludeSet.count(*it)) it = emptyV.erase(it);
-                                else ++it;
-
-                            }
-
-                            for (auto it = intersection.begin(); it != intersection.end(); ) {
-
-                                if (excludeSet.count(*it)) it = intersection.erase(it);
-                                else ++it;
-
-                            }
-
-                            minCutEdgeCandidatesIntersection.push_back(intersection);
-                            minCutEdgeCandidatesNearU.push_back(emptyU);
-                            minCutEdgeCandidatesNearV.push_back(emptyV);
-                            cout << "  Candidates for this edge (intersection):";
-
-                            if (intersection.empty()) cout << " (none)";
-
-                            cout << "\n";
-
-                            for (const auto& c : intersection) {
-
-                                cout << "    " << c.to_string() << "\n";
-
-                            }
-
-                            cout << "  Candidates for this edge (near U):";
-
-                            if (emptyU.empty()) cout << " (none)";
-
-                            cout << "\n";
-
-                            for (const auto& c : emptyU) {
-
-                                cout << "    " << c.to_string() << "\n";
-
-                            }
-
-                            cout << "  Candidates for this edge (near V):";
-
-                            if (emptyV.empty()) cout << " (none)";
-
-                            cout << "\n";
-
-                            for (const auto& c : emptyV) {
-
-                                cout << "    " << c.to_string() << "\n";
-
-                            }
+                            Cell3DPosition uPos(u->x, u->y, u->z);
+                            Cell3DPosition vPos(e->to->x, e->to->y, e->to->z);
+                            minCutEdges.push_back(make_pair(uPos, vPos));
 
                         }
 
@@ -532,15 +485,191 @@ public:
 
         }
 
+        cout << "\n";
+        return minCutEdges;
+
+    }
+
+    /* Iterate the stored augmenting paths and, for each consecutive pair of
+     positions, query the motion engine for the exact pivots that enable the
+     motion.  Returns the union of all pivot positions across all paths. */
+    set<Cell3DPosition> findPivotsInAugmentingPaths() {
+
+        set<Cell3DPosition> usedPivots;
+
+        for (const auto& path : augmentingPathPositions) {
+
+            for (size_t i = 0; i + 1 < path.size(); ++i) {
+
+                Catoms3DFlowBridgeCode::getPivotsForMotion(path[i], path[i + 1], usedPivots);
+
+            }
+
+        }
+
+        return usedPivots;
+
+    }
+
+    /* Print which structural blocks are / are not used as a pivot for any
+     motion within the augmenting paths (i.e. actual flow).
+     Idle blocks are candidates that can be moved to build bridges. */
+    void printIdleStructuralBlocks() {
+
+        set<Cell3DPosition> usedPivots = findPivotsInAugmentingPaths();
+        const auto& structural = Catoms3DFlowBridgeCode::getStructuralBlocks();
+
+        cout << "\n";
+        cout << "\n--- Idle Structural Blocks (not pivot in any augmenting path) ---\n";
+
+        vector<Cell3DPosition> idle;
+
+        for (const auto& pos : structural) {
+
+            if (usedPivots.count(pos)) {
+
+                cout << "  [PIVOT in aug. path] " << pos.to_string() << "\n";
+
+            } else {
+
+                cout << "  [IDLE]               " << pos.to_string() << "\n";
+                idle.push_back(pos);
+
+            }
+
+        }
+
+        if (idle.empty()) {
+
+            cout << "All structural blocks serve as pivots in augmenting paths.\n";
+
+        } else {
+
+            cout << idle.size() << " idle structural block(s) available for bridge building.\n";
+
+        }
+
+        cout << "\n";
+
+    }
+
+    // For each min-cut edge (u,v), build a fresh flow graph with
+    // SUPER_SOURCE -> u and v -> SUPER_SINK, run Edmonds-Karp, and print the
+    // bridge paths (intermediate positions between u and v).
+    void findBridgePaths(const vector<pair<Cell3DPosition, Cell3DPosition>>& minCutEdges) {
+
+        cout << "\n";
+        cout << "\n--- Bridge Paths for Min-Cut Edges ---\n";
+
+        for (size_t idx = 0; idx < minCutEdges.size(); ++idx) {
+
+            const Cell3DPosition& uPos = minCutEdges[idx].first;
+            const Cell3DPosition& vPos = minCutEdges[idx].second;
+
+            cout << "\n=== Min-cut edge " << (idx + 1) << ": "
+                 << uPos.to_string() << " -> " << vPos.to_string() << " ===\n";
+
+            // Build a dedicated flow graph for this (u, v) pair
+            FlowGraph* bridgeGraph = new FlowGraph();
+            bridgeGraph->superSource = bridgeGraph->getOrCreateSpecial("SUPER_SOURCE");
+            bridgeGraph->superSink   = bridgeGraph->getOrCreateSpecial("SUPER_SINK");
+
+            set<pair<string, string>> edgeVisited;
+            set<string> nodeVisited;
+
+            // Recursive exploration (same logic as buildFlowGraph)
+            auto addEdgesRec = [&](Node* fromNode, const Cell3DPosition& fromPos, auto&& self) -> void {
+
+                string k = fromNode->key();
+                if (nodeVisited.count(k)) return;
+                nodeVisited.insert(k);
+
+                vector<Cell3DPosition> reachable;
+                Catoms3DFlowBridgeCode::getAllPossibleMotionsFromPosition(fromPos, reachable);
+
+                for (const auto& toPos : reachable) {
+
+                    Node* toNode = bridgeGraph->getOrCreateNode(toPos);
+                    pair<string, string> ek = make_pair(fromNode->key(), toNode->key());
+
+                    if (!edgeVisited.count(ek)) {
+
+                        bridgeGraph->addEdge(fromNode, toNode, 1);
+                        edgeVisited.insert(ek);
+
+                    }
+
+                    self(toNode, toPos, self);
+
+                }
+
+            };
+
+            // SUPER_SOURCE -> u
+            Node* uNode = bridgeGraph->getOrCreateNode(uPos);
+            bridgeGraph->addEdge(bridgeGraph->superSource, uNode, FlowGraph::INF_CAPACITY);
+
+            // Explore reachable positions from u
+            addEdgesRec(uNode, uPos, addEdgesRec);
+
+            // v -> SUPER_SINK (only if v was discovered during exploration)
+            Node* vNode = bridgeGraph->getOrCreateNode(vPos);
+            bridgeGraph->addEdge(vNode, bridgeGraph->superSink, FlowGraph::INF_CAPACITY);
+
+            // Run Edmonds-Karp
+            int flow = bridgeGraph->findAndPrintAugmentingPaths(
+                bridgeGraph->superSource, bridgeGraph->superSink);
+
+            if (flow == 0) {
+
+                cout << "  No bridge path found for this min-cut edge.\n";
+
+            } else {
+
+                cout << "  " << flow << " bridge path(s) found.\n";
+
+                // Print bridge positions (excluding u, v) for each path
+                for (size_t p = 0; p < bridgeGraph->augmentingPathPositions.size(); ++p) {
+
+                    const auto& path = bridgeGraph->augmentingPathPositions[p];
+                    cout << "  Bridge " << (p + 1) << " intermediate positions:";
+
+                    bool hasBridge = false;
+
+                    for (const auto& pos : path) {
+
+                        if (pos != uPos && pos != vPos) {
+
+                            cout << " " << pos.to_string();
+                            hasBridge = true;
+
+                        }
+
+                    }
+
+                    if (!hasBridge) cout << " (direct edge, no intermediates)";
+
+                    cout << "\n";
+
+                }
+
+            }
+
+            delete bridgeGraph;
+
+        }
+
+        cout << "\n";
+
     }
 
     // Edmonds-Karp: Find and print all augmenting paths from source to sink
     void startProcess(Node* source, Node* sink) {
-        
+
         auto originalCap = backupCapacities();
         int pathNum = findAndPrintAugmentingPaths(source, sink);
-        printMinCutEdges(originalCap, source, sink);
-        restoreCapacities(originalCap);
+        auto minCutEdges = printMinCutEdges(originalCap, source, sink);
+        findBridgePaths(minCutEdges);
 
     }
 
@@ -578,6 +707,9 @@ void Catoms3DFlowBridgeCode::startup() {
     flowGraph->printNodes();
     flowGraph->printEdges();
     flowGraph->startProcess(flowGraph->superSource, flowGraph->superSink);
+    flowGraph->printIdleStructuralBlocks();
+
+    delete flowGraph;
 
     return;
 
@@ -755,11 +887,13 @@ void Catoms3DFlowBridgeCode::parseStructuralBlocks(TiXmlDocument *doc) {
 
 void Catoms3DFlowBridgeCode::printTargetList() {
 
+    cout << "\n";
     for (Cell3DPosition targetListPos : Catoms3DFlowBridgeCode::getTargetPositions()) {
 
         cout << "Target position: " << targetListPos.to_string() << endl;
 
     }
+    cout << "\n";
 
     return;
 
@@ -767,11 +901,13 @@ void Catoms3DFlowBridgeCode::printTargetList() {
 
 void Catoms3DFlowBridgeCode::printMovingBlockList() {
 
+    cout << "\n";
     for (Cell3DPosition movingBlockListPos : Catoms3DFlowBridgeCode::getMovingBlocks()) {
 
         cout << "Moving block position: " << movingBlockListPos.to_string() << endl;
 
     }
+    cout << "\n";
 
     return;
 
@@ -779,11 +915,13 @@ void Catoms3DFlowBridgeCode::printMovingBlockList() {
 
 void Catoms3DFlowBridgeCode::printStructuralBlocks() {
 
+    cout << "\n";
     for (Cell3DPosition structuralBlockListPos : Catoms3DFlowBridgeCode::getStructuralBlocks()) {
 
         cout << "Structural block position: " << structuralBlockListPos.to_string() << endl;
 
     }
+    cout << "\n";
 
     return;
 
@@ -864,4 +1002,62 @@ bool Catoms3DFlowBridgeCode::getAllPossibleMotionsFromPosition(Cell3DPosition po
         }
     }
     return found;
+}
+
+/* For a motion from fromPos to toPos, finds the exact pivots that the motion
+ engine would use and inserts their positions into the provided set.
+
+ - Block exists at fromPos: calls findPivotLinkPairsForTargetCell which
+   returns every (pivot, link) pair that enables the rotation.
+ - No block at fromPos: iterates active neighbors as potential pivots via
+   getValidMotionListFromPivot, same logic as getAllPossibleMotionsFromPosition. */
+void Catoms3DFlowBridgeCode::getPivotsForMotion(const Cell3DPosition& fromPos, const Cell3DPosition& toPos, set<Cell3DPosition>& pivots) {
+
+    auto* lattice = BaseSimulator::getWorld()->lattice;
+    Catoms3DBlock* mod = static_cast<Catoms3DBlock*>(lattice->getBlock(fromPos));
+
+    if (mod) {
+
+        // Use the motion engine to get exact pivot-link pairs
+        auto pairs = Catoms3DMotionEngine::findPivotLinkPairsForTargetCell(mod, toPos);
+
+        for (auto& [pivot, link] : pairs) {
+
+            if (pivot) pivots.insert(pivot->position);
+
+        }
+
+    } else {
+
+        /* No block at fromPos — replicate the "no block" branch of
+        getAllPossibleMotionsFromPosition and track which neighbor
+        acts as pivot for this specific toPos. */
+        for (auto& neighPos : lattice->getActiveNeighborCells(fromPos)) {
+
+            Catoms3DBlock* neigh = static_cast<Catoms3DBlock*>(lattice->getBlock(neighPos));
+            if (!neigh) continue;
+
+            vector<Catoms3DMotionRulesLink*> vec;
+            Catoms3DMotionRules motionRulesInstance;
+            short conFrom = neigh->getConnectorId(fromPos);
+            motionRulesInstance.getValidMotionListFromPivot(neigh, conFrom, vec,
+                static_cast<FCCLattice*>(lattice), nullptr);
+
+            for (auto link : vec) {
+
+                Cell3DPosition destPos;
+                neigh->getNeighborPos(link->getConToID(), destPos);
+
+                if (destPos == toPos) {
+
+                    pivots.insert(neighPos);
+
+                }
+
+            }
+
+        }
+
+    }
+
 }

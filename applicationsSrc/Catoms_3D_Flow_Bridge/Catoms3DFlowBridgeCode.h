@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <set>
 #include "robots/catoms3D/catoms3DSimulator.h"
 #include "robots/catoms3D/catoms3DBlockCode.h"
 
@@ -26,6 +27,8 @@ public:
 
     // Gets all reachable positions from a given position (one Catoms3D move)
     static bool getAllPossibleMotionsFromPosition(Cell3DPosition position, vector<Cell3DPosition> &reachablePositions);
+
+    static void getPivotsForMotion(const Cell3DPosition& fromPos, const Cell3DPosition& toPos, set<Cell3DPosition>& pivots);
 
     // Static getters and setters for block and target positions, and configParsed flag
     static const vector<Cell3DPosition>& getTargetPositions();
