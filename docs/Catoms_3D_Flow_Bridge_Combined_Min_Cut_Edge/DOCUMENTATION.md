@@ -1,4 +1,4 @@
-# Catoms3D Flow Bridge — Combined Min-Cut Edge
+# Catoms3D Flow Bridge - Combined Min-Cut Edge
 
 End-to-end design and process documentation for the
 `Catoms_3D_Flow_Bridge_Combined_Min_Cut_Edge` application.
@@ -16,8 +16,8 @@ End-to-end design and process documentation for the
 2. [Glossary](#2-glossary)
 3. [System Architecture](#3-system-architecture)
 4. [End-to-End Activity Diagram](#4-end-to-end-activity-diagram)
-5. [State Diagram — BridgePhase](#5-state-diagram--bridgephase)
-6. [Sequence Diagram — Bridge Orchestration](#6-sequence-diagram--bridge-orchestration)
+5. [State Diagram - BridgePhase](#5-state-diagram--bridgephase)
+6. [Sequence Diagram - Bridge Orchestration](#6-sequence-diagram--bridge-orchestration)
 7. [Detailed Activity Diagrams per Stage](#7-detailed-activity-diagrams-per-stage)
 8. [Full Pseudocode](#8-full-pseudocode)
 9. [Software Engineering Documents](#9-software-engineering-documents)
@@ -28,16 +28,16 @@ End-to-end design and process documentation for the
 
 A 3D lattice of catoms contains:
 
-- **Moving blocks** — modules that must traverse the lattice from
+- **Moving blocks** - modules that must traverse the lattice from
   their starting positions to designated **target positions**.
-- **Structural blocks** — stationary modules that form the lattice
+- **Structural blocks** - stationary modules that form the lattice
   scaffolding and may act as **pivots** during rotation-based motion.
-- **Idle structural blocks** — structural blocks that are *not*
+- **Idle structural blocks** - structural blocks that are *not*
   required as pivots for any augmenting path in the main max-flow
   solution. These are candidates to be relocated.
 
 A max-flow / min-cut analysis on the motion graph (moving blocks →
-target positions) finds the *bottleneck* — the smallest set of edges
+target positions) finds the *bottleneck* - the smallest set of edges
 whose removal disconnects sources from sinks. Each min-cut edge
 `(u_i, v_i)` represents a position pair through which only one
 module can pass per cycle.
@@ -64,8 +64,8 @@ Edmonds–Karp is re-run on the modified lattice.
 | Term | Definition |
 |---|---|
 | `Cell3DPosition` | Integer lattice coordinate `(x, y, z)` in the FCC grid. |
-| **Moving block** | Source module — must reach a target position. |
-| **Target position** | Sink cell — final destination for some moving block. |
+| **Moving block** | Source module - must reach a target position. |
+| **Target position** | Sink cell - final destination for some moving block. |
 | **Structural block** | Stationary scaffold module. |
 | **Idle structural block** | Structural block not used as a pivot in any main-flow augmenting path. |
 | **Valid idle module** | Idle structural block that is (a) not motion-blocked and (b) not an articulation point of the structure. |
@@ -189,10 +189,10 @@ flowchart TD
     B --> C[createSimulator]
     C --> D[For each catom: instantiate Catoms3DFlowBridgeCode<br/>and call startup]
     D --> E{hasRun?}
-    E -- yes --> Z2([return — only first catom runs pipeline])
+    E -- yes --> Z2([return - only first catom runs pipeline])
     E -- no --> F[Parse XML:<br/>targetPositions, movingBlocks, structuralBlocks]
     F --> G[Build main FlowGraph:<br/>SUPER_SOURCE → moving blocks → … → targets → SUPER_SINK<br/>via getAllPossibleMotionsFromPosition]
-    G --> H[backupCapacities — snapshot original capacities]
+    G --> H[backupCapacities - snapshot original capacities]
     H --> I[Edmonds-Karp: find augmenting paths,<br/>set originalFlowValue]
     I --> J[printMinCutEdges → allMinCutEdges]
     J --> K[computeFirstAndLastBoundary:<br/>fwd BFS from SUPER_SOURCE,<br/>rev BFS to SUPER_SINK<br/>→ U_first, V_last]
@@ -205,12 +205,12 @@ flowchart TD
     P -- no --> Q[Build pendingBridges:<br/>one BridgeTask per candidate path]
     Q --> R[Pop first task → processBridgeTask]
     R --> S[currentPhase = FORWARD]
-    S --> T[runForwardRound — iterative]
+    S --> T[runForwardRound - iterative]
     T --> U{intermediates all placed?}
     U -- no --> T
     U -- yes --> V[verifyBridge:<br/>re-run main EK,<br/>compare to originalFlowValue,<br/>log min-cut edges bypassed]
     V --> W[startReturnPhase → currentPhase = RETURN]
-    W --> X[executeReturnIteration — iterative]
+    W --> X[executeReturnIteration - iterative]
     X --> Y{pendingOrigins empty?}
     Y -- no --> X
     Y -- yes --> AA[verifyAllOriginsRestored<br/>+ clearBridgeTaskState]
@@ -222,7 +222,7 @@ flowchart TD
 
 ---
 
-## 5. State Diagram — BridgePhase
+## 5. State Diagram - BridgePhase
 
 The orchestration is driven by a three-state machine. The same
 `onMotionEnd()` callback dispatches differently depending on phase.
@@ -258,7 +258,7 @@ stateDiagram-v2
 
 ---
 
-## 6. Sequence Diagram — Bridge Orchestration
+## 6. Sequence Diagram - Bridge Orchestration
 
 Interaction between block-code orchestration, the scheduler, and the
 lattice/world for one BridgeTask.
@@ -271,7 +271,7 @@ sequenceDiagram
     participant LAT as Lattice / World
     participant MOD as Catoms3DBlock (donor)
 
-    Note over SU: Phase 0 — pop task
+    Note over SU: Phase 0 - pop task
     SU->>SU: processBridgeTask(task)
     SU->>SU: currentPhase = FORWARD
     SU->>SU: runForwardRound()
@@ -307,7 +307,7 @@ sequenceDiagram
     Note over SU: All intermediates placed (or deadlock)
     SU->>SU: verifyBridge()
     SU->>SU: rerun main EK → compare to originalFlowValue
-    SU->>SU: startReturnPhase() — currentPhase = RETURN
+    SU->>SU: startReturnPhase() - currentPhase = RETURN
 
     loop while pendingOrigins nonempty
         SU->>SU: executeReturnIteration()
@@ -324,7 +324,7 @@ sequenceDiagram
     end
 
     SU->>SU: verifyAllOriginsRestored()
-    SU->>SU: clearBridgeTaskState() — currentPhase = IDLE
+    SU->>SU: clearBridgeTaskState() - currentPhase = IDLE
     SU->>SU: advanceToNextTask()
 ```
 
@@ -368,7 +368,7 @@ flowchart TD
     G --> H[Edmonds-Karp on sub-FlowGraph]
     H --> I[For each augmenting path:<br/>filter out U_first ∪ V_last<br/>→ intermediates only]
     I --> J{intermediates empty?}
-    J -- yes --> K[Skip — direct edge]
+    J -- yes --> K[Skip - direct edge]
     J -- no --> L[Push into candidatePaths]
     K --> M([Log totals, delete cg])
     L --> M
@@ -573,13 +573,13 @@ function FlowGraph::computeFirstAndLastBoundary(originalCap, minCutEdges,
                 distToSink[p] = distToSink[u] + 1
                 queue.push(p)
 
-    // Pass 1 — find argmin.
+    // Pass 1 - find argmin.
     minFront, minBack = +∞, +∞
     for (u, v) in minCutEdges:
         if u in distFromSource: minFront = min(minFront, distFromSource[u])
         if v in distToSink:     minBack  = min(minBack,  distToSink[v])
 
-    // Pass 2 — collect endpoints achieving argmin.
+    // Pass 2 - collect endpoints achieving argmin.
     frontSet, backSet = ∅, ∅
     for (u, v) in minCutEdges:
         if u unreachable: [!] WARN
@@ -637,7 +637,7 @@ function FlowGraph::findCombinedBridgePath(frontEndpoints, backEndpoints,
     frontSet = set(frontEndpoints); backSet = set(backEndpoints)
     for path in cg.augmentingPathPositions:
         intermediates = [pos for pos in path if pos ∉ frontSet and pos ∉ backSet]
-        if intermediates.empty: [!] "direct edge — skipped"
+        if intermediates.empty: [!] "direct edge - skipped"
         else:
             combinedBridge.candidatePaths.append(intermediates)
             [!] log "Combined path k intermediates: …"
@@ -667,7 +667,7 @@ function isArticulationPoint(pos):
     return visited.size < (structural ∪ moving \ {pos}).size
 ```
 
-### 8.9 Phase 0 — start orchestration
+### 8.9 Phase 0 - start orchestration
 
 ```
 function startBridgeOrchestration():
@@ -731,9 +731,9 @@ function runForwardRound():
         [!] WARN deadlock; verifyBridge(); startReturnPhase(); return
 
     singleTarget = (unoccupied.size() == 1)
-    [!] banner — single or multi target round
+    [!] banner - single or multi target round
 
-    // R2 — build per-round flow graph through empty space.
+    // R2 - build per-round flow graph through empty space.
     bg = new FlowGraph
     for s in availableIdle: addEdge(superSource → s, INF); addEdgesRec(s, …)
     for t in unoccupied:    addEdge(t → superSink, INF)
@@ -746,7 +746,7 @@ function runForwardRound():
     if flow == 0:
         [!] WARN deadlock; verifyBridge(); startReturnPhase(); return
 
-    // R4 — selection.
+    // R4 - selection.
     if singleTarget:
         S_r = [{shortest roundPath, lexicographic tie-break}]
     else:
@@ -754,7 +754,7 @@ function runForwardRound():
         if S_r.empty:
             [!] WARN deadlock; verifyBridge(); startReturnPhase(); return
 
-    // R5 — record traversal & return targets.
+    // R5 - record traversal & return targets.
     roundOrigins = []
     for (origin, dest) in S_r:
         path = findPath(origin, dest)
@@ -769,7 +769,7 @@ function runForwardRound():
 
     roundAssignments.append(roundOrigins)
 
-    // R6 — pre-dispatch assertion.
+    // R6 - pre-dispatch assertion.
     pendingMotions.clear(); pendingArrival.clear()
     for origin in roundOrigins:
         if lattice.getBlock(dest of origin) != nullptr:
@@ -870,7 +870,7 @@ function verifyBridge():
 
     if newFlow > originalFlowValue: [!] "Flow increased: <old> → <new>. Bridge successful!"
     elif newFlow == originalFlowValue: [!] "Flow unchanged at <new>"
-    else: ERR "Flow decreased — unexpected"
+    else: ERR "Flow decreased - unexpected"
 ```
 
 ### 8.15 Return phase
@@ -887,7 +887,7 @@ function executeReturnIteration():
     if pendingOrigins.empty:
         verifyAllOriginsRestored(); return
 
-    // Step Ret.1 — pick module with shortest BFS to its origin.
+    // Step Ret.1 - pick module with shortest BFS to its origin.
     bestLen = +∞; bestPath = []
     for (currentPos, origin) in returnTargets:
         if origin ∉ pendingOrigins: continue
@@ -1034,7 +1034,7 @@ tasks.
 | EK runs (discovery) | `N` | `1` |
 | Output | `allBridges: vector<(edge, paths)>` | `combinedBridge: {U_first, V_last, candidatePaths}` |
 | BridgeTask count | `Σ_e |paths_e|` | `|combinedBridge.candidatePaths|` |
-| Detour guarantee | bypasses one edge at a time — paths may run *through* other min-cut edges | every `(u_i, v_i)` is zero-capped in the sub-graph, so candidate paths cannot reuse the bottleneck |
+| Detour guarantee | bypasses one edge at a time - paths may run *through* other min-cut edges | every `(u_i, v_i)` is zero-capped in the sub-graph, so candidate paths cannot reuse the bottleneck |
 | Locality of corridors | scattered around each edge | one coherent corridor bridging the entire bottleneck |
 | Orchestration code | unchanged below Phase 0 | unchanged below Phase 0 |
 
@@ -1089,7 +1089,7 @@ Post-run checks:
 
 - The combined sub-graph zero-caps the *forward* min-cut edges and
   their reverses. If two min-cut edges share an endpoint, the
-  zero-capping is still per-edge — sharing is handled correctly but
+  zero-capping is still per-edge - sharing is handled correctly but
   not exploited (e.g. for tighter cut detection).
 - `findNonInterferingAssignment` is greedy. A flow-based selector
   (matching on a conflict graph) would yield more parallel
