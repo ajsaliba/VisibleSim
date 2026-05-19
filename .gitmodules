@@ -1,3 +1,7 @@
 [submodule "utilities/configGenerator"]
 	path = utilities/configGenerator
 	url = https://github.com/nazandre/VisibleSimConfigGenerator.git
+[submodule "RePoSt_v2"]
+	path = RePoSt_v2
+	url = https://github.com/jadbassil/VisibleSim.git
+	branch = RePoSt_v2
