@@ -692,12 +692,12 @@ target_link_libraries(Catoms_3D_Flow_Bridge_Combined_Min_Cut_Edge Catoms3D -lfre
 install(TARGETS Catoms_3D_Flow_Bridge_Combined_Min_Cut_Edge RUNTIME DESTINATION applicationsBin/Catoms_3D_Flow_Bridge_Combined_Min_Cut_Edge)
 
 add_executable(
-        Catoms_3D_Flow_Bridge_Combined_Min_Cut_Edge_Combined_Test
-        applicationsSrc/Catoms_3D_Flow_Bridge_Combined_Min_Cut_Edge_Combined_Test/Catoms3DFlowBridge.cpp
-        applicationsSrc/Catoms_3D_Flow_Bridge_Combined_Min_Cut_Edge_Combined_Test/Catoms3DFlowBridgeCode.cpp
+        flowBridge
+        applicationsSrc/flowBridge/Catoms3DFlowBridge.cpp
+        applicationsSrc/flowBridge/Catoms3DFlowBridgeCode.cpp
 )
-target_link_libraries(Catoms_3D_Flow_Bridge_Combined_Min_Cut_Edge_Combined_Test Catoms3D -lfreeglut -lmuparser -lOpenGL32 -lglu32 -lglew32) #
-install(TARGETS Catoms_3D_Flow_Bridge_Combined_Min_Cut_Edge_Combined_Test RUNTIME DESTINATION applicationsBin/Catoms_3D_Flow_Bridge_Combined_Min_Cut_Edge_Combined_Test)
+target_link_libraries(flowBridge Catoms3D -lfreeglut -lmuparser -lOpenGL32 -lglu32 -lglew32) #
+install(TARGETS flowBridge RUNTIME DESTINATION applicationsBin/flowBridge)
 
 add_executable(catomsCombination 
                 applicationsSrc/catomsCombination/catomsCombination.cpp 
