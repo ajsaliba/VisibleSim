@@ -699,6 +699,14 @@ add_executable(
 target_link_libraries(flowBridge Catoms3D -lfreeglut -lmuparser -lOpenGL32 -lglu32 -lglew32) #
 install(TARGETS flowBridge RUNTIME DESTINATION applicationsBin/flowBridge)
 
+add_executable(
+        flowBridgeTest
+        applicationsSrc/flowBridgeTest/Catoms3DFlowBridge.cpp
+        applicationsSrc/flowBridgeTest/Catoms3DFlowBridgeCode.cpp
+)
+target_link_libraries(flowBridgeTest Catoms3D -lfreeglut -lmuparser -lOpenGL32 -lglu32 -lglew32) #
+install(TARGETS flowBridgeTest RUNTIME DESTINATION applicationsBin/flowBridgeTest)
+
 add_executable(catomsCombination 
                 applicationsSrc/catomsCombination/catomsCombination.cpp 
                 applicationsSrc/catomsCombination/catomsCombinationCode.cpp
