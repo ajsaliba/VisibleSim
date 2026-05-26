@@ -66,7 +66,7 @@ For brevity we use the symbols below:
 
 | Symbol | Meaning |
 |---|---|
-| `n_L` | `|L|`, the number of in-grid cells |
+| `n_L` | `\|L\|`, the number of in-grid cells |
 | `Δ_L` | maximum FCC in-degree of any cell, bounded by 12 |
 | `s_star`, `t_star` | super-source and super-sink |
 | `F = F(O_0)` | the pre-bridge max-flow |
@@ -246,8 +246,8 @@ function ParseConfig(xmlDoc):
 
 | Resource | Bound |
 |---|---|
-| Time  | `Θ(|M| + |T| + |St|)` |
-| Space | `Θ(|M| + |T| + |St|)` |
+| Time  | `Θ(\|M\| + \|T\| + \|St\|)` |
+| Space | `Θ(\|M\| + \|T\| + \|St\|)` |
 
 ---
 
@@ -1099,12 +1099,12 @@ Using the size variables from §1.5:
 
 | Phase | Time | Space |
 |---|---|---|
-| 1 - XML parsing | `Θ(|M| + |T| + |St|)` | `Θ(|M| + |T| + |St|)` |
+| 1 - XML parsing | `Θ(\|M\| + \|T\| + \|St\|)` | `Θ(\|M\| + \|T\| + \|St\|)` |
 | 2 - Flow graph build | `O(n · Δ_L²)` | `O(n + m)` |
 | 3 - Edmonds-Karp main | `O(n · m²)` worst case; `O(m · sqrt(n))` for unit caps | `O(n + m)` |
 | 4 - Picard-Queyranne SCCs | `O(n + m)` | `O(n)` |
 | 5 - Combined-bridge construction | `O(n' · m'²)` with `n', m' = O(K · Δ_L)` | `O(n' + m')` |
-| 6 - Idle filtering | `O(I · |M + St|)` | `O(|M + St|)` |
+| 6 - Idle filtering | `O(I · \|M + St\|)` | `O(\|M + St\|)` |
 | 7 - Virtual bridge verification | `O(S · K + n_v · m_v²)` | `O(n_v + m_v)` |
 | 8 - Forward dispatch (full task) | `O(K · D · K · Δ_L²)` plus motion-engine events | proportional |
 | 9 - Post-bridge verification | `O(n · m²)` | `O(n + m)` |
@@ -1327,8 +1327,8 @@ on its bridge cell on the first attempt.
 | `U` | source-most boundary of `C_all` |
 | `V_h` | sink-most boundary of `C_all` |
 | `N'` | combined sub-flow-graph over empty cells |
-| `K = |B|` | bridge size |
-| `S = |M|`, `I = |validIdleModules|` | sizes used in complexity |
+| `K = \|B\|` | bridge size |
+| `S = \|M\|`, `I = \|validIdleModules\|` | sizes used in complexity |
 | `Δ_L` | maximum FCC in-degree |
 | `F_virtual` | flow returned by `verifyBridgeVirtually` |
 | `newFlow` | flow returned by post-bridge `verifyBridge` |

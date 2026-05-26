@@ -197,7 +197,7 @@ short legend immediately below the diagram.
 classDiagram
     class Catoms3DFlowBridgeCode {
         <<BlockCode>>
-        -catom : Catoms3DBlock*
+        -catom : Catoms3DBlock
         +static targetPositions : Cells
         +static movingBlocks : Cells
         +static structuralBlocks : Cells
@@ -577,7 +577,7 @@ pivot.
 
 ```mermaid
 sequenceDiagram
-    participant Main as main()
+    participant Main as main
     participant Sim as Simulator
     participant Code as Catoms3DFlowBridgeCode
     participant FG as FlowGraph
@@ -594,7 +594,7 @@ sequenceDiagram
 
     Code->>FG: new FlowGraph
     Code->>FG: buildFlowGraph()
-    Note over FG: addEdgesRec from every moving block;<br/>wire every target to superSink
+    Note over FG: addEdgesRec from every moving block and wire every target to superSink
 
     Code->>FG: startProcess(superSource, superSink, allMinCutEdges)
     FG->>FG: backupCapacities
@@ -642,7 +642,7 @@ execution.
 sequenceDiagram
     participant Code as Catoms3DFlowBridgeCode
     participant Lat as Lattice
-    participant FG as FlowGraph (virtual)
+    participant FG as FlowGraph_virtual
 
     Code->>Code: collect insertCells = combinedBridgePositions ∩ free ∩ in-grid
     alt insertCells empty
@@ -752,38 +752,62 @@ coincidence: both schemes prefer the geometrically closest donors.
 sequenceDiagram
     participant Code as Catoms3DFlowBridgeCode
     participant Sched as Scheduler
-    participant Mod as Catoms3DBlock (donor)
+    participant Mod as Catoms3DBlock_donor
     participant Lat as Lattice
 
-    Code->>Code: runForwardRound()
-    Code->>Lat: scan currentBridgeTask.intermediatePath
+    Code->>Code: runForwardRound
+    Code->>Lat: scan intermediatePath
+
     alt all bridge cells occupied
-        Code->>Code: verifyBridge -> startReturnPhase
+
+        Code->>Code: verifyBridge then startReturnPhase
+
     else still empty cells
-        loop while currentSelectionStage != SEL_DONE
-            Code->>Code: dispatchOneUnderCurrentStage()
+
+        loop selection stage not done
+
+            Code->>Code: dispatchOneUnderCurrentStage
+
             alt dispatched ok
-                Code->>Sched: schedule Catoms3DRotationStartEvent(mod, nextPos)
+
+                Code->>Sched: schedule rotation event
                 Code-->>Mod: rotation event fires
-                Sched-->>Code: onMotionEnd via catom hook
-                Code->>Code: handleForwardMotionEnd(arrivedAt)
-                alt arrivedAt == finalDest
-                    Code->>Code: log [ARRIVED]; pendingMotions.erase
+                Sched-->>Code: onMotionEnd callback
+
+                Code->>Code: handleForwardMotionEnd
+
+                alt arrived at final destination
+
+                    Code->>Code: log ARRIVED
+                    Code->>Code: erase pending motions
                     Code->>Code: onForwardRoundComplete
-                    Code->>Code: ++currentForwardRound; runForwardRound
+                    Code->>Code: increment forward round
+                    Code->>Code: runForwardRound
+
                 else more steps remain
-                    Code->>Code: recompute onward path excluding forwardVisited
+
+                    Code->>Code: recompute onward path
                     Code->>Sched: schedule next rotation
+
                 end
+
                 Code->>Code: break inner loop
+
             else stage exhausted
+
                 Code->>Code: advanceSelectionStage
+
             end
+
         end
-        opt all stages exhausted with cells unfilled
-            Code->>Code: log [Bridge] Selection state machine exhausted
-            Code->>Code: verifyBridge -> startReturnPhase
+
+        opt all stages exhausted
+
+            Code->>Code: log selection exhausted
+            Code->>Code: verifyBridge then startReturnPhase
+
         end
+
     end
 ```
 
