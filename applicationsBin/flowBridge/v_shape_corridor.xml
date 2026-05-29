@@ -1,0 +1,160 @@
+<?xml version="1.0" standalone="no" ?>
+<!--
+    V-shape corridor.
+
+    Modules start on a 4x4 source pad at the top-left of the grid, travel
+    down the left diagonal arm of the V, cross the narrow apex at the
+    bottom, climb the right diagonal arm and land on a 4x4 target pad at
+    the top-right.
+
+    The apex (y = 3, x = 10..13) is the bottleneck: the only place where
+    the left and right arms touch.  Both arms are 2-cells wide; the apex
+    is at most 2 cells wide on each row.
+
+    Layout (z = 0 lattice plane, viewed from above):
+
+        y=13 |  SSSS                            TTTT
+        y=12 |  SSSS                            TTTT
+        y=11 |  SSSS                            TTTT
+        y=10 |  SSSS                            TTTT
+        y= 9 |     LL                          RR
+        y= 8 |      LL                        RR
+        y= 7 |       LL                      RR
+        y= 6 |        LL                    RR
+        y= 5 |         LL                  RR
+        y= 4 |          LL                RR
+        y= 3 |           LL              RR     <-- apex (bottleneck)
+              ----+----+----+----+----+----+
+                  5   10   15   20
+
+        S = source pad,  L = left arm,  R = right arm,  T = target pad
+-->
+<world gridSize="24,15,4" windowSize="1280,720">
+    <camera target="120,75,0" thetaPhiDist="-35,30,300" fov="30" near="1.0" far="500.0"/>
+    <spotlight target="120,75,0" thetaPhiDist="-35,45,300" fov="20"/>
+    <blockList color="128,128,128" blockSize="10,10,10">
+        <!-- Source pad z=0 : x=1..4, y=10..13 (16 cells) -->
+        <block position="1,10,0" orientation="0"/>
+        <block position="1,11,0" orientation="0"/>
+        <block position="1,12,0" orientation="0"/>
+        <block position="1,13,0" orientation="0"/>
+        <block position="2,10,0" orientation="0"/>
+        <block position="2,11,0" orientation="0"/>
+        <block position="2,12,0" orientation="0"/>
+        <block position="2,13,0" orientation="0"/>
+        <block position="3,10,0" orientation="0"/>
+        <block position="3,11,0" orientation="0"/>
+        <block position="3,12,0" orientation="0"/>
+        <block position="3,13,0" orientation="0"/>
+        <block position="4,10,0" orientation="0"/>
+        <block position="4,11,0" orientation="0"/>
+        <block position="4,12,0" orientation="0"/>
+        <block position="4,13,0" orientation="0"/>
+
+        <!-- Left arm z=0 : 2-wide diagonal descending from source pad to apex -->
+        <block position="4,9,0" orientation="0"/>
+        <block position="5,9,0" orientation="0"/>
+        <block position="5,8,0" orientation="0"/>
+        <block position="6,8,0" orientation="0"/>
+        <block position="6,7,0" orientation="0"/>
+        <block position="7,7,0" orientation="0"/>
+        <block position="7,6,0" orientation="0"/>
+        <block position="8,6,0" orientation="0"/>
+        <block position="8,5,0" orientation="0"/>
+        <block position="9,5,0" orientation="0"/>
+        <block position="9,4,0" orientation="0"/>
+        <block position="10,4,0" orientation="0"/>
+        <block position="10,3,0" orientation="0"/>
+        <block position="11,3,0" orientation="0"/>
+
+        <!-- Right arm z=0 : 2-wide diagonal ascending from apex to target pad -->
+        <block position="12,3,0" orientation="0"/>
+        <block position="13,3,0" orientation="0"/>
+        <block position="13,4,0" orientation="0"/>
+        <block position="14,4,0" orientation="0"/>
+        <block position="14,5,0" orientation="0"/>
+        <block position="15,5,0" orientation="0"/>
+        <block position="15,6,0" orientation="0"/>
+        <block position="16,6,0" orientation="0"/>
+        <block position="16,7,0" orientation="0"/>
+        <block position="17,7,0" orientation="0"/>
+        <block position="17,8,0" orientation="0"/>
+        <block position="18,8,0" orientation="0"/>
+        <block position="18,9,0" orientation="0"/>
+        <block position="19,9,0" orientation="0"/>
+
+        <!-- Target pad z=0 : x=19..22, y=10..13 (16 cells) -->
+        <block position="19,10,0" color="#00CCCC" orientation="0"/>
+        <block position="19,11,0" color="#00CCCC" orientation="0"/>
+        <block position="19,12,0" color="#00CCCC" orientation="0"/>
+        <block position="19,13,0" color="#00CCCC" orientation="0"/>
+        <block position="20,10,0" color="#00CCCC" orientation="0"/>
+        <block position="20,11,0" color="#00CCCC" orientation="0"/>
+        <block position="20,12,0" color="#00CCCC" orientation="0"/>
+        <block position="20,13,0" color="#00CCCC" orientation="0"/>
+        <block position="21,10,0" color="#00CCCC" orientation="0"/>
+        <block position="21,11,0" color="#00CCCC" orientation="0"/>
+        <block position="21,12,0" color="#00CCCC" orientation="0"/>
+        <block position="21,13,0" color="#00CCCC" orientation="0"/>
+        <block position="22,10,0" color="#00CCCC" orientation="0"/>
+        <block position="22,11,0" color="#00CCCC" orientation="0"/>
+        <block position="22,12,0" color="#00CCCC" orientation="0"/>
+        <block position="22,13,0" color="#00CCCC" orientation="0"/>
+
+        <!-- Source modules z=1 : x=1..4, y=10..13 (16 modules) -->
+        <block position="1,10,1" color="#00CC00" orientation="0"/>
+        <block position="1,11,1" color="#00CC00" orientation="0"/>
+        <block position="1,12,1" color="#00CC00" orientation="0"/>
+        <block position="1,13,1" color="#00CC00" orientation="0"/>
+        <block position="2,10,1" color="#00CC00" orientation="0"/>
+        <block position="2,11,1" color="#00CC00" orientation="0"/>
+        <block position="2,12,1" color="#00CC00" orientation="0"/>
+        <block position="2,13,1" color="#00CC00" orientation="0"/>
+        <block position="3,10,1" color="#00CC00" orientation="0"/>
+        <block position="3,11,1" color="#00CC00" orientation="0"/>
+        <block position="3,12,1" color="#00CC00" orientation="0"/>
+        <block position="3,13,1" color="#00CC00" orientation="0"/>
+        <block position="4,10,1" color="#00CC00" orientation="0"/>
+        <block position="4,11,1" color="#00CC00" orientation="0"/>
+        <block position="4,12,1" color="#00CC00" orientation="0"/>
+        <block position="4,13,1" color="#00CC00" orientation="0"/>
+    </blockList>
+    <movingBlocks>
+        <block position="1,10,1" color="#00CC00" orientation="0"/>
+        <block position="1,11,1" color="#00CC00" orientation="0"/>
+        <block position="1,12,1" color="#00CC00" orientation="0"/>
+        <block position="1,13,1" color="#00CC00" orientation="0"/>
+        <block position="2,10,1" color="#00CC00" orientation="0"/>
+        <block position="2,11,1" color="#00CC00" orientation="0"/>
+        <block position="2,12,1" color="#00CC00" orientation="0"/>
+        <block position="2,13,1" color="#00CC00" orientation="0"/>
+        <block position="3,10,1" color="#00CC00" orientation="0"/>
+        <block position="3,11,1" color="#00CC00" orientation="0"/>
+        <block position="3,12,1" color="#00CC00" orientation="0"/>
+        <block position="3,13,1" color="#00CC00" orientation="0"/>
+        <block position="4,10,1" color="#00CC00" orientation="0"/>
+        <block position="4,11,1" color="#00CC00" orientation="0"/>
+        <block position="4,12,1" color="#00CC00" orientation="0"/>
+        <block position="4,13,1" color="#00CC00" orientation="0"/>
+    </movingBlocks>
+    <targetList>
+        <target format="grid">
+            <cell position="19,10,1" color="0,200,200"/>
+            <cell position="19,11,1" color="0,200,200"/>
+            <cell position="19,12,1" color="0,200,200"/>
+            <cell position="19,13,1" color="0,200,200"/>
+            <cell position="20,10,1" color="0,200,200"/>
+            <cell position="20,11,1" color="0,200,200"/>
+            <cell position="20,12,1" color="0,200,200"/>
+            <cell position="20,13,1" color="0,200,200"/>
+            <cell position="21,10,1" color="0,200,200"/>
+            <cell position="21,11,1" color="0,200,200"/>
+            <cell position="21,12,1" color="0,200,200"/>
+            <cell position="21,13,1" color="0,200,200"/>
+            <cell position="22,10,1" color="0,200,200"/>
+            <cell position="22,11,1" color="0,200,200"/>
+            <cell position="22,12,1" color="0,200,200"/>
+            <cell position="22,13,1" color="0,200,200"/>
+        </target>
+    </targetList>
+</world>
